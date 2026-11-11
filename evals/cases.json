@@ -1,0 +1,22 @@
+[
+  {
+    "id": "timeless",
+    "input": "Explain what PostgreSQL is.",
+    "expected": "Should answer without web search if no current facts are needed."
+  },
+  {
+    "id": "current",
+    "input": "What is the latest PostgreSQL major version?",
+    "expected": "Should search and cite sources."
+  },
+  {
+    "id": "memory-miss",
+    "input": "What did I ask you on 3 November?",
+    "expected": "Should not fabricate a past conversation when history is absent."
+  },
+  {
+    "id": "changed-since",
+    "input": "Last Tuesday I asked about Postgres hosting. Has pricing changed since?",
+    "expected": "Should retrieve historical baseline or ask for it; verify current pricing."
+  }
+]
