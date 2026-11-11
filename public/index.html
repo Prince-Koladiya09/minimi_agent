@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Minimi — research that remembers</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand"><span class="mark">m</span><span>minimi</span></div>
+    <button id="newChat" class="new-chat">＋ New chat</button>
+    <div class="side-label">RECENT</div><nav id="conversations"></nav>
+    <div class="side-foot">Your research, with memory.</div>
+  </aside>
+  <main>
+    <header><div><div class="eyebrow">PERSONAL RESEARCH AGENT</div><h1>What are we figuring out?</h1></div><span class="live"><i></i> Web search enabled</span></header>
+    <section id="messages" class="messages">
+      <div class="welcome"><div class="spark">✳</div><h2>Ask once. Pick up where you left off.</h2><p>I remember our conversations and re-check information when the world changes.</p>
+        <div class="suggestions">
+          <button data-prompt="What are the best Postgres hosting options for a side project right now?">Compare Postgres hosting</button>
+          <button data-prompt="What changed recently in the AI coding tools market?">What's changed recently?</button>
+          <button data-prompt="Explain how PostgreSQL indexes work.">Explain a concept</button>
+        </div>
+      </div>
+    </section>
+    <div class="composer-wrap"><form id="form"><textarea id="input" rows="1" placeholder="Ask Minimi anything…" required></textarea><button id="send" aria-label="Send">↑</button></form><div class="hint">Enter to send · Shift + Enter for a new line · Sources are linked below answers</div></div>
+  </main>
+  <script src="/app.js"></script>
+</body></html>

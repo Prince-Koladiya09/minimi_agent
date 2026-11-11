@@ -1,0 +1,174 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
+:root{font-family:'DM Sans',sans-serif;color:#20231f;background:#fbfcfa;font-synthesis:none}
+*{box-sizing:border-box}body{margin:0;display:flex;height:100vh;overflow:hidden}.sidebar{width:250px;background:#f2f4ef;border-right:1px solid #e7eae3;padding:25px 16px;display:flex;flex-direction:column;flex-shrink:0}.brand{font:800 22px Manrope;letter-spacing:-1px;display:flex;align-items:center;gap:9px;margin:0 8px 30px}.mark{background:#b8e986;color:#24351b;width:28px;height:28px;border-radius:9px;display:grid;place-items:center}.new-chat{border:1px solid #dce2d5;background:white;border-radius:10px;padding:11px;text-align:left;font:600 13px inherit;cursor:pointer}.side-label{font-size:10px;letter-spacing:1.4px;color:#93998e;margin:30px 9px 10px}nav{display:grid;gap:4px;overflow:auto}nav button{border:0;background:transparent;text-align:left;padding:10px;border-radius:8px;color:#62685f;font:13px 'DM Sans';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}nav button:hover,nav button.active{background:#e6eadf;color:#20231f}.side-foot{margin-top:auto;color:#a0a69a;font-size:11px;padding:8px}main{flex:1;display:flex;flex-direction:column;min-width:0}header{padding:36px max(6vw,30px) 18px;display:flex;align-items:center;justify-content:space-between}h1{font:700 25px Manrope;letter-spacing:-.8px;margin:5px 0}.eyebrow{font-size:9px;letter-spacing:1.7px;color:#8a9184;font-weight:700}.live{font-size:11px;color:#697165;background:#f0f4eb;padding:8px 11px;border-radius:30px}.live i{display:inline-block;width:6px;height:6px;background:#79b94a;border-radius:50%;margin-right:6px}.messages{flex:1;overflow:auto;padding:20px max(12vw,35px) 35px}.welcome{max-width:620px;margin:10vh auto;text-align:center}.spark{font-size:30px;color:#75a94c}.welcome h2{font:700 25px Manrope;letter-spacing:-.8px;margin:14px 0 8px}.welcome p{color:#858b80;font-size:14px}.suggestions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:28px}.suggestions button{background:white;border:1px solid #e3e7de;border-radius:30px;padding:10px 14px;color:#596052;font-size:12px;cursor:pointer}.message{max-width:780px;margin:22px auto}.user{display:flex;justify-content:flex-end}.bubble{max-width:80%;padding:13px 16px;border-radius:16px;background:#edf2e8;font-size:14px;line-height:1.6;white-space:pre-wrap}.assistant .bubble{background:transparent;padding:4px 0;max-width:100%;font-size:14px;line-height:1.75}.status{color:#8a9184;font-size:12px;margin:10px 0}.sources{display:flex;gap:7px;flex-wrap:wrap;margin-top:13px}.sources a{font-size:11px;color:#62794e;text-decoration:none;background:#f0f4eb;border-radius:6px;padding:6px 9px}.composer-wrap{padding:12px max(12vw,35px) 22px;background:linear-gradient(transparent,#fbfcfa 22%)}form{max-width:780px;margin:auto;display:flex;align-items:flex-end;gap:10px;border:1px solid #dfe4da;background:white;border-radius:15px;padding:10px 10px 10px 16px;box-shadow:0 8px 28px #28351b0a}textarea{border:0;outline:0;resize:none;flex:1;font:14px 'DM Sans';line-height:1.5;max-height:160px;padding:7px 0;color:#252a22}form button{border:0;background:#b8e986;color:#27371c;border-radius:10px;width:35px;height:35px;font-size:20px;cursor:pointer}.hint{text-align:center;color:#a0a69a;font-size:10px;margin-top:9px}@media(max-width:700px){.sidebar{width:62px;padding:18px 8px}.brand{margin:0 auto 25px;font-size:0}.brand .mark{font-size:18px}.new-chat{font-size:0;text-align:center;padding:10px 0}.side-label,.side-foot{display:none}nav button{font-size:0;height:36px}nav button:before{content:'•';font-size:20px}.messages{padding:15px 18px}.composer-wrap{padding:10px 15px 18px}header{padding:24px 18px}.live{display:none}}
+
+/* Send and Stop button */
+
+#send {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  width: 38px;
+  height: 38px;
+
+  border: none;
+  border-radius: 11px;
+
+  background: #b8e986;
+  color: #27371c;
+
+  font-size: 21px;
+  font-weight: 700;
+
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+#send:hover {
+  background: #a9dc75;
+}
+
+#send:active {
+  transform: scale(0.94);
+}
+
+/* Visible while a response is running */
+
+#send.stop {
+  background: #f4dedb;
+  color: #a23d35;
+  font-size: 18px;
+}
+
+#send.stop:hover {
+  background: #efcbc6;
+}
+
+/* Message input */
+
+#input {
+  flex: 1;
+  min-width: 0;
+  resize: none;
+  outline: none;
+  border: none;
+
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 8px 0;
+}
+
+/* Status messages */
+
+.status {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #858d80;
+}
+
+/* Accessible keyboard focus */
+
+#send:focus-visible,
+#input:focus-visible,
+#newChat:focus-visible {
+  outline: 2px solid #83b95a;
+  outline-offset: 2px;
+}
+
+
+/* Conversation row */
+.conversation-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+/* Conversation title */
+.conversation-open {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+
+/* Three-dot menu button */
+.conversation-menu-toggle {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-size: 22px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.conversation-row:hover .conversation-menu-toggle,
+.conversation-menu-toggle:focus-visible,
+.conversation-menu-toggle[aria-expanded="true"] {
+  opacity: 1;
+}
+
+.conversation-menu-toggle:hover {
+  background: rgba(0, 0, 0, 0.07);
+}
+
+/* Dropdown */
+.conversation-menu-wrap {
+  position: relative;
+  flex: 0 0 32px;
+}
+
+.conversation-menu {
+  position: absolute;
+  z-index: 100;
+  top: 34px;
+  right: 0;
+  min-width: 150px;
+  padding: 5px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+.conversation-menu[hidden] {
+  display: none;
+}
+
+/* Delete option */
+.conversation-delete {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 9px 11px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #dc2626;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.conversation-delete:hover {
+  background: #fef2f2;
+}
+
+/* Touch devices: keep menu button visible */
+@media (hover: none) {
+  .conversation-menu-toggle {
+    opacity: 1;
+  }
+}
