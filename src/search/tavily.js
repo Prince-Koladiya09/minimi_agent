@@ -1,162 +1,179 @@
 
+import { createHash } from "node:crypto";
 import { config } from "../config.js";
 import { db } from "../memory/db.js";
 
-const TTL_MS = 12 * 60 * 1000;
-const MAX_RESULTS = 3;
-const MAX_SNIPPET_CHARS = 500;
+const CACHE_TTL = 10 * 60 * 1000;
+const MAX_RESULTS = 5;
 
-export async function webSearch(args, options = {}) {
-  const query = String(args.query || "").trim().slice(0, 300);
+function normalizeDate(value) {
+  if (!value) return null;
 
-  if (!query) return [];
+  const match = String(value).match(/^\d{4}-\d{2}-\d{2}/);
+  return match ? match[0] : null;
+}
+
+function normalizeRecency(value) {
+  const allowed = new Set(["day", "week", "month", "year"]);
+  const normalized = String(value || "").toLowerCase();
+
+  return allowed.has(normalized) ? normalized : null;
+}
+
+function cacheKey(args, query) {
+  const normalized = {
+    query,
+    recency: normalizeRecency(args.recency),
+    after_date: normalizeDate(args.after_date),
+    end_date: normalizeDate(args.end_date),
+    domains: Array.isArray(args.domains)
+      ? [...args.domains].map(String).sort()
+      : []
+  };
+
+  return createHash("sha256")
+    .update(JSON.stringify(normalized))
+    .digest("hex");
+}
+
+function withinDateRange(result, afterDate, endDate) {
+  const published = normalizeDate(result.published_date);
+
+  // Do not treat an undated result as date-verified.
+  if (!published && (afterDate || endDate)) return false;
+  if (!published) return true;
+
+  if (afterDate && published < afterDate) return false;
+  if (endDate && published > endDate) return false;
+
+  return true;
+}
+
+function normalizeResult(result) {
+  return {
+    title: String(result.title || "Untitled").slice(0, 150),
+    url: String(result.url || ""),
+    published_date: result.published_date || null,
+    snippet: String(result.content || "").slice(0, 700)
+  };
+}
+
+export async function webSearch(args = {}, options = {}) {
+  const query = String(args.query || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .slice(0, 300);
+
+  if (query.length < 3) {
+    throw new Error("Search query must contain at least 3 characters.");
+  }
 
   if (!config.tavilyApiKey) {
-    throw new Error("Tavily API key is missing.");
+    throw new Error("TAVILY_API_KEY is not configured.");
   }
 
+  const afterDate = normalizeDate(args.after_date);
+  const endDate = normalizeDate(args.end_date);
+  const recency = normalizeRecency(args.recency);
+
+  const key = cacheKey(args, query);
+
+  // Never return cached data for an already-aborted request.
   if (options.signal?.aborted) {
-    throw new Error("Search cancelled.");
+    throw new Error("Search request was aborted.");
   }
 
-  // Normalize cache key so equivalent searches reuse results.
-  const key = JSON.stringify({
-    query: query.toLowerCase(),
-    recency: args.recency || null,
-    after_date: args.after_date || null,
-    domains: [...(args.domains || [])].sort()
-  });
-
-  // Check cached results first.
   const cached = db.prepare(
-    "SELECT response_json, fetched_at FROM search_cache WHERE cache_key = ?"
+    `SELECT response_json,fetched_at
+     FROM search_cache
+     WHERE cache_key=?`
   ).get(key);
 
   if (
     cached &&
-    Date.now() - new Date(cached.fetched_at).getTime() < TTL_MS
+    Date.now() - new Date(cached.fetched_at).getTime() < CACHE_TTL
   ) {
-    console.log("[TAVILY] Using cached search results.");
-
-    return JSON.parse(cached.response_json);
+    return {
+      results: JSON.parse(cached.response_json),
+      cacheHit: true
+    };
   }
 
-  console.log("[TAVILY] Searching:", query);
-
-  const timeoutSignal = AbortSignal.timeout(8000);
-
-  const signal = options.signal
-    ? AbortSignal.any([options.signal, timeoutSignal])
-    : timeoutSignal;
-
-  const requestBody = {
+  const body = {
     api_key: config.tavilyApiKey,
     query,
     search_depth: "basic",
+    topic: recency ? "news" : "general",
     max_results: MAX_RESULTS,
     include_answer: false,
     include_raw_content: false
   };
 
-  // Apply domain filtering through Tavily's API.
-  if (args.domains?.length) {
-    requestBody.include_domains = args.domains.slice(0, 8);
+  if (afterDate) body.start_date = afterDate;
+  if (endDate) body.end_date = endDate;
+  if (recency) body.time_range = recency;
+
+  if (Array.isArray(args.domains) && args.domains.length) {
+    body.include_domains = args.domains
+      .map((domain) => String(domain).trim())
+      .filter(Boolean)
+      .slice(0, 10);
   }
 
-  // Use news search for recent developments.
-  if (args.recency) {
-    requestBody.topic = "news";
-  } else {
-    requestBody.topic = "general";
+  const timeoutSignal = AbortSignal.timeout(config.searchTimeoutMs);
+  const signals = [timeoutSignal];
+
+  if (options.signal) {
+    signals.push(options.signal);
   }
 
-  // Add a date constraint to the query when supplied.
-  if (args.after_date) {
-    requestBody.query += ` after:${args.after_date}`;
-  }
-
-  let response;
-
-  try {
-    response = await fetch(
-      "https://api.tavily.com/search",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(requestBody),
-        signal
-      }
-    );
-  } catch (error) {
-    if (options.signal?.aborted) {
-      throw new Error("Search cancelled by the browser.");
+  const response = await fetch(
+    "https://api.tavily.com/search",
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.any(signals)
     }
-
-    if (error.name === "TimeoutError") {
-      throw new Error("Tavily search timed out. Please try again.");
-    }
-
-    throw new Error(
-      `Tavily connection failed: ${error.message}`
-    );
-  }
+  );
 
   if (!response.ok) {
-    const errorText = await response.text().catch(() => "");
-
-    console.error(
-      "[TAVILY] API error:",
-      response.status,
-      errorText.slice(0, 300)
+    const error = new Error(
+      `Tavily returned HTTP ${response.status}`
     );
 
-    if (response.status === 401) {
-      throw new Error("Invalid Tavily API key.");
-    }
-
-    if (response.status === 429) {
-      throw new Error("Tavily rate limit reached. Please wait.");
-    }
-
-    throw new Error(
-      `Tavily returned HTTP ${response.status}.`
-    );
+    error.status = response.status;
+    throw error;
   }
 
   const data = await response.json();
 
-  if (options.signal?.aborted) {
-    throw new Error("Search cancelled.");
+  const results = (data.results || [])
+    .filter((result) => result.url)
+    .filter((result) =>
+      withinDateRange(result, afterDate, endDate)
+    )
+    .map(normalizeResult)
+    .slice(0, MAX_RESULTS);
+
+  // Cache only successful responses.
+  // Do not cache a response if the caller cancelled during the request.
+  if (!options.signal?.aborted) {
+    db.prepare(
+      `INSERT OR REPLACE INTO search_cache(
+         cache_key,response_json,fetched_at
+       ) VALUES(?,?,?)`
+    ).run(
+      key,
+      JSON.stringify(results),
+      new Date().toISOString()
+    );
   }
 
-  const results = (data.results || [])
-    .slice(0, MAX_RESULTS)
-    .filter((result) => result.url)
-    .map((result, index) => ({
-      id: `S${index + 1}`,
-      title: String(result.title || "Untitled").slice(0, 150),
-      url: result.url,
-      published_date: result.published_date || null,
-      snippet: String(result.content || "")
-        .slice(0, MAX_SNIPPET_CHARS)
-    }));
-
-  // Cache successful results.
-  db.prepare(`
-    INSERT OR REPLACE INTO search_cache
-    (cache_key, response_json, fetched_at)
-    VALUES (?, ?, ?)
-  `).run(
-    key,
-    JSON.stringify(results),
-    new Date().toISOString()
-  );
-
-  console.log(
-    `[TAVILY] Found ${results.length} results.`
-  );
-
-  return results;
+  return {
+    results,
+    cacheHit: false
+  };
 }
