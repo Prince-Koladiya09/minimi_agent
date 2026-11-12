@@ -1,6 +1,7 @@
+
 {
-  "name": "minimi-chat-agent-js",
-  "version": "1.0.0",
+  "name": "minimi-agent",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "engines": {

@@ -277,12 +277,21 @@ function processSseChunk(chunk, request) {
     case "status":
       request.status.textContent = data.message || "Working…";
       break;
+    
+    case "replace": {
+      request.answerText = data.text || "";
+      request.bubble.innerHTML = renderText(request.answerText);
+      request.status?.remove();
+      break;
+}
 
+    
     case "delta":
-      // The current backend sends accumulated answer text.
-      request.bubble.innerHTML = renderText(data.text || "");
+      request.answerText = (request.answerText || "") + (data.text || "");
+      request.bubble.innerHTML = renderText(request.answerText);
       request.status.remove();
       break;
+
 
     case "sources": {
       const sources = data.sources || [];
@@ -319,6 +328,7 @@ function processSseChunk(chunk, request) {
   }
 }
 
+
 async function sendMessage(text) {
   const message = String(text || "").trim();
 
@@ -346,7 +356,8 @@ async function sendMessage(text) {
     navigationId,
     element: answer,
     bubble,
-    status
+    status,
+    answerText: ""
   };
 
   activeRequest = request;
@@ -405,10 +416,16 @@ async function sendMessage(text) {
       scrollToBottom();
     }
 
+    // Process any remaining SSE data.
+    if (buffer.trim() && activeRequest === request) {
+      processSseChunk(buffer, request);
+    }
+
     if (activeRequest === request) {
       status.remove();
       await loadConversations();
     }
+
   } catch (error) {
     if (activeRequest !== request) return;
 
@@ -418,6 +435,7 @@ async function sendMessage(text) {
       status.textContent = `Couldn't finish: ${error.message}`;
       console.error("Chat error:", error);
     }
+
   } finally {
     if (activeRequest === request) {
       activeRequest = null;
@@ -426,6 +444,7 @@ async function sendMessage(text) {
     }
   }
 }
+
 
 // Enter sends; Shift + Enter inserts a newline.
 input.addEventListener("keydown", (event) => {
